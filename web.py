@@ -1,4 +1,3 @@
-
 import os, asyncio, logging
 from typing import Optional, Any, Dict
 from fastapi import FastAPI, Request, HTTPException
@@ -85,12 +84,25 @@ def rate_limited(uid: int) -> bool:
     dq.append(now)
     return False
 
+# ✅ Fixed start command
 async def start_cmd(update, context):
-  await context.bot.send_message(update.effective_chat.id, "📽️ Welcome to \"AllMovies Ultra Pro!\"")
-Send a movie name.", parse_mode="Markdown")
+    await context.bot.send_message(
+        update.effective_chat.id,
+        "📽️ Welcome to \"AllMovies Ultra Pro!\"",
+        parse_mode="Markdown"
+    )
+    await context.bot.send_message(
+        update.effective_chat.id,
+        "Send a movie name.",
+        parse_mode="Markdown"
+    )
 
 async def help_cmd(update, context):
-    await context.bot.send_message(update.effective_chat.id, "Send a movie name. Example: `Jailer`", parse_mode="Markdown")
+    await context.bot.send_message(
+        update.effective_chat.id,
+        "Send a movie name. Example: `Jailer`",
+        parse_mode="Markdown"
+    )
 
 async def ping_cmd(update, context):
     await context.bot.send_message(update.effective_chat.id, "pong ✅")
@@ -112,8 +124,7 @@ async def text_handler(update: Update, context):
         title = top.get("title") or q
         year = (top.get("release_date") or "")[:4]
         rating = top.get("vote_average","N/A")
-        caption = f"🎬 *{title}* ({year})
-⭐ {rating} / 10 (TMDB)"
+        caption = f"🎬 *{title}* ({year})\n⭐ {rating} / 10 (TMDB)"
         poster = top.get("poster_path")
         if poster:
             url = f"https://image.tmdb.org/t/p/w500{poster}"
@@ -122,8 +133,7 @@ async def text_handler(update: Update, context):
     om = await omdb_lookup(q)
     if om and om.get("Response") == "True":
         poster = om.get("Poster")
-        caption = f"🎬 *{om.get('Title','?')}* ({om.get('Year','')})
-⭐ {om.get('imdbRating','N/A')} / 10 (IMDB)"
+        caption = f"🎬 *{om.get('Title','?')}* ({om.get('Year','')})\n⭐ {om.get('imdbRating','N/A')} / 10 (IMDB)"
         if poster and poster != "N/A":
             return await context.bot.send_photo(update.effective_chat.id, poster, caption=caption, parse_mode="Markdown")
         return await context.bot.send_message(update.effective_chat.id, caption, parse_mode="Markdown")
@@ -172,7 +182,8 @@ class UP(BaseModel):
     pass
 
 @app.get("/health")
-async def health(): return {"ok": True}
+async def health(): 
+    return {"ok": True}
 
 @app.post("/webhook/{token}")
 async def webhook(token: str, request: Request):
@@ -189,3 +200,4 @@ async def webhook(token: str, request: Request):
 async def polling_start():
     asyncio.create_task(app_tele.run_polling(allowed_updates=Update.ALL_TYPES))
     return PlainTextResponse("polling started")
+    
