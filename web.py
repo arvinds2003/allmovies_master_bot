@@ -86,7 +86,7 @@ def rate_limited(uid: int) -> bool:
     return False
 
 async def start_cmd(update, context):
-    await context.bot.send_message(update.effective_chat.id, "🎬 Welcome to *AllMovies UltraPro*!
+  await context.bot.send_message(update.effective_chat.id, "📽️ Welcome to \"AllMovies Ultra Pro!\"")
 Send a movie name.", parse_mode="Markdown")
 
 async def help_cmd(update, context):
