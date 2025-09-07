@@ -155,7 +155,9 @@ async def startup():
     global app_tele, db, client, BASE_URL
     if MONGODB_URI:
         client = AsyncIOMotorClient(MONGODB_URI, uuidRepresentation="standard")
-        db = client.get_default_database() or client["allmovies"]
+        db = client.get_default_database()
+if db is None:
+    db = client["allmovies"] 
     app_tele = build_application()
     await app_tele.initialize()
     await app_tele.start()
