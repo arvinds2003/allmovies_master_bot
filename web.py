@@ -149,31 +149,35 @@ def build_application() -> Application:
 
 app_tele: Optional[Application] = None
 client: Optional[AsyncIOMotorClient] = None
-
 @app.on_event("startup")
 async def startup():
     global app_tele, db, client, BASE_URL
+
+    # MongoDB connection
     if MONGODB_URI:
         client = AsyncIOMotorClient(MONGODB_URI, uuidRepresentation="standard")
         db = client.get_default_database()
         if db is None:
             db = client["allmovies"]
 
+    # Build and start Telegram app
     app_tele = build_application()
     await app_tele.initialize()
     await app_tele.start()
 
+    # Webhook setup (with flood control fix)
     if not BASE_URL:
         BASE_URL = os.getenv("RENDER_EXTERNAL_URL", "").rstrip("/")
+
     if BASE_URL:
         wh = f"{BASE_URL}/webhook/{BOT_TOKEN}?secret={WEBHOOK_SECRET}"
         current = await app_tele.bot.get_webhook_info()
-        if current.url != wh:
+
+        if current.url != wh:   # ✅ Flood control fix
             await app_tele.bot.set_webhook(wh, allowed_updates=Update.ALL_TYPES)
             log.info("Webhook set to %s", wh)
         else:
-            log.info("Webhook already set, skipping")
-            
+            log.info("Webhook already set, skipping")            
 @app.on_event("shutdown")
 async def shutdown():
     global app_tele, client
