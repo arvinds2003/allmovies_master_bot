@@ -92,30 +92,33 @@ async def help_cmd(update, context):
     await context.bot.send_message(update.effective_chat.id, "Send a movie name. Example: `Jailer`", parse_mode="Markdown")
 
 async def ping_cmd(update, context):
-    await context.bot.send_message(update.effective_chat.id, "pong ✅")
-
 async def text_handler(update: Update, context):
     uid = update.effective_user.id if update.effective_user else 0
     if rate_limited(uid):
         return await context.bot.send_message(update.effective_chat.id, "⏳ Too many requests. Slow down.")
     q = (update.message.text or "").strip()
+    # Log to DB
     try:
         if db:
             await db.searches.insert_one({"user_id": uid, "q": q, "at": datetime.utcnow()})
     except Exception as e:
         log.warning("DB log failed: %s", e)
+
+    # Try TMDB
     info = await tmdb_search(q)
     if info and info.get("results"):
         top = info["results"][0]
         title = top.get("title") or q
         year = (top.get("release_date") or "")[:4]
-        rating = top.get("vote_average","N/A")
+        rating = top.get("vote_average", "N/A")
         caption = f"🎬 *{title}* ({year})\n⭐ {rating} / 10 (TMDB)"
         poster = top.get("poster_path")
         if poster:
             url = f"https://image.tmdb.org/t/p/w500{poster}"
             return await context.bot.send_photo(update.effective_chat.id, url, caption=caption, parse_mode="Markdown")
         return await context.bot.send_message(update.effective_chat.id, caption, parse_mode="Markdown")
+
+    # Try OMDB
     om = await omdb_lookup(q)
     if om and om.get("Response") == "True":
         poster = om.get("Poster")
@@ -123,8 +126,9 @@ async def text_handler(update: Update, context):
         if poster and poster != "N/A":
             return await context.bot.send_photo(update.effective_chat.id, poster, caption=caption, parse_mode="Markdown")
         return await context.bot.send_message(update.effective_chat.id, caption, parse_mode="Markdown")
-    await context.bot.send_message(update.effective_chat.id, "❌ Not found. Try another title.")
 
+    # Not found
+    await context.bot.send_message(update.effective_chat.id, "❌ Not found. Try another title.")
 def build_application() -> Application:
     appb = ApplicationBuilder().token(BOT_TOKEN).concurrent_updates(True).build()
     appb.add_handler(CommandHandler("start", start_cmd))
